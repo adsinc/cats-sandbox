@@ -1,6 +1,6 @@
 package sandbox
 
-class PrintableLib {
+object PrintableLib {
 
   trait Printable[A] {
     def format(a: A): String
@@ -14,9 +14,15 @@ class PrintableLib {
   }
 
   object PrintableInstances {
-    implicit val intPrintableInstance: Printable[Int] = (a: Int) => a.toString
-    implicit val stringPrintableInstance: Printable[String] = (a: String) => a.toString
+    implicit val intPrintableInstance: Printable[Int] = a => a.toString
+    implicit val stringPrintableInstance: Printable[String] = a => a.toString
+    implicit val catPrintableInstance: Printable[Cat] = a => {
+      val name = Printable.format(a.name)
+      val age = Printable.format(a.age)
+      val color = Printable.format(a.color)
+      s"$name is a $age year-old $color cat."
+    }
   }
 
-  final case class Cat(name: String, any: Int, color: String)
+  final case class Cat(name: String, age: Int, color: String)
 }
