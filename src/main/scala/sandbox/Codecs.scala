@@ -31,4 +31,20 @@ object Codecs {
     }
 
   implicit val doubleCodec: Codec[Double] = stringCodec.imap(_.toDouble, _.toString)
+
+  final case class Box[A](value: A)
+
+  implicit def boxCodec[A](implicit c: Codec[A]): Codec[Box[A]] =
+    c.imap(Box(_), _.value)
+}
+
+object CodecsTest extends App {
+
+  import Codecs._
+
+  println(encode(1.2))
+  println(decode[Double]("1.2"))
+
+  println(encode(Box(1.2)))
+  println(decode[Box[Double]]("1.2"))
 }
