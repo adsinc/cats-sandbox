@@ -44,5 +44,5 @@ object PostOrderCalculatorRunner extends App {
 
   println(program2.run(Nil).value)
 
-  println(evalInput("1 2 + 3 *"))
+  println(evalInput("1 2 + 3 4 + *"))
 }
