@@ -22,13 +22,13 @@ object PostOrderCalculator {
       (value :: newState, fn(a, b))
     }
 
-  def evalAll(input: List[String]): CalcState[Int] = {
+  def evalAll(input: List[String]): CalcState[Int] =
     input.foldLeft(State.pure[List[Int], Int](0)) {
       (state, sym) => state.flatMap(_ => evalOne(sym))
     }
-  }
 
-  def evalInput(s: String): Int = ???
+  def evalInput(s: String): Int =
+    evalAll(s.split(" ").toList).runA(Nil).value
 
 }
 
@@ -43,4 +43,6 @@ object PostOrderCalculatorRunner extends App {
   } yield ans
 
   println(program2.run(Nil).value)
+
+  println(evalInput("1 2 + 3 *"))
 }
