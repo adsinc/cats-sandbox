@@ -24,16 +24,23 @@ object TreeMonad {
         case Leaf(a) => f(a)
       }
 
-    //    @tailrec
     override def tailRecM[A, B](a: A)(f: A => Tree[Either[A, B]]): Tree[B] =
       f(a) match {
-        case Branch(left, right) =>
-          for {
-            l <- left
-            r <- right
-          } yield branch(tailRecM(l)(f), tailRecM(r)(f))
-        case Leaf(Left(value)) => tailRecM(value)(f)
-        case Leaf(Right(value)) => leaf(value)
+        case Branch(leftTree, rightTree) =>
+          branch(
+            flatMap(leftTree) {
+              case Left(v) => tailRecM(v)(f)
+              case Right(v) => pure(v)
+            },
+            flatMap(rightTree) {
+              case Left(v) => tailRecM(v)(f)
+              case Right(v) => pure(v)
+            }
+          )
+        case Leaf(Left(value)) =>
+          tailRecM(value)(f)
+        case Leaf(Right(value)) =>
+          leaf(value)
       }
   }
 }
