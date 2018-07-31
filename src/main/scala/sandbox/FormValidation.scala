@@ -6,6 +6,8 @@ import cats.implicits._
 
 object FormValidation {
 
+  case class User(name: String, age: Int)
+
   type FormData = Map[String, String]
   type FailFast[A] = Either[List[String], A]
   type FailSlow[A] = Validated[List[String], A]
@@ -28,10 +30,6 @@ object FormValidation {
 
   def readName(data: FormData): FailFast[String] =
     getValue(data)("name")
-      .flatMap(name => nonBlank("name")(name))
-
-  def readName(data: FormData): FailFast[String] =
-    getValue(data)("name")
       .flatMap(nonBlank("name"))
 
   def readAge(data: FormData): FailFast[Int] =
@@ -40,5 +38,7 @@ object FormValidation {
       .flatMap(parseInt("age"))
       .flatMap(nonNegative("age"))
 
-}
+  def createUser(data: FormData): FailSlow[User] =
+    Semigroupal.map2(readName(data).toValidated, readAge(data).toValidated)(User.apply)
 
+}
