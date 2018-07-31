@@ -39,6 +39,6 @@ object FormValidation {
       .flatMap(nonNegative("age"))
 
   def createUser(data: FormData): FailSlow[User] =
-    Semigroupal.map2(readName(data).toValidated, readAge(data).toValidated)(User.apply)
+    (readName(data).toValidated, readAge(data).toValidated).mapN(User.apply)
 
 }
