@@ -12,7 +12,7 @@ object TestingAsyncCode {
   }
 
   trait RealUptimeClient extends UptimeClient[Future] {
-    override def getUptime(hostname: String): Future[Int] = ???
+    override def getUptime(hostname: String): Future[Int]
   }
 
   class TestUptimeClient(hosts: Map[String, Int]) extends UptimeClient[Id] {
@@ -20,8 +20,8 @@ object TestingAsyncCode {
       hosts.getOrElse(hostname, 0)
   }
 
-  class UptimeService(client: UptimeClient) {
-    def getTotalUptime(hostNames: List[String]): Future[Int] =
+  class UptimeService[F[_] : Applicative](client: UptimeClient[F]) {
+    def getTotalUptime(hostNames: List[String]): F[Int] =
       hostNames.traverse(client.getUptime).map(_.sum)
   }
 
