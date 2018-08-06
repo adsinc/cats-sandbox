@@ -11,7 +11,7 @@ object DataCheck {
     def apply(value: A): Either[E, A]
   }
 
-  //  final case class And[E, A]() extends Check[E, A]
+  final case class And[E, A](left: Check[E, A], right: Check[E, A]) extends Check[E, A]
 
   final case class CheckF[E: Semigroup, A](func: A => Either[E, A]) {
     def apply(value: A): Either[E, A] =
@@ -27,7 +27,5 @@ object DataCheck {
         }
       }
   }
-
-  final case class And[E, A](left: Check[E, A], right: Check[E, A]) extends Check[E, A]
 
 }
