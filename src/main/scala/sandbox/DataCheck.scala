@@ -2,11 +2,14 @@ package sandbox
 
 import cats._
 import cats.data.Validated
+import cats.data.Validated._
 import cats.implicits._
 
 object DataCheck {
 
   sealed trait Predicate[E, A] {
+    import Predicate._
+
     def and(that: Predicate[E, A]): Predicate[E, A] = And(this, that)
 
     def or(that: Predicate[E, A]): Predicate[E, A] = Or(this, that)
@@ -20,43 +23,49 @@ object DataCheck {
           (left(a), right(a)).mapN((_, _) => a)
 
         case Or(left, right) =>
-          val l = left(a)
-          val r = right(a)
-          if (l.isValid || r.isValid) a.valid
-          else (l, r).mapN((_, _) => a)
+          left(a) match {
+            case Valid(_) => Valid(a)
+            case Invalid(e1) =>
+              right(a) match {
+                case Valid(_)    => Valid(a)
+                case Invalid(e2) => Invalid(e1 |+| e2)
+              }
+          }
       }
   }
 
-  final case class And[E, A](left: Predicate[E, A],
-                             right: Predicate[E, A]) extends Predicate[E, A]
+  object Predicate {
+    final case class And[E, A](left: Predicate[E, A], right: Predicate[E, A])
+        extends Predicate[E, A]
 
-  final case class Or[E, A](left: Predicate[E, A],
-                            right: Predicate[E, A]) extends Predicate[E, A]
+    final case class Or[E, A](left: Predicate[E, A], right: Predicate[E, A])
+        extends Predicate[E, A]
 
-  final case class Pure[E, A](func: A => Validated[E, A]) extends Predicate[E, A]
+    final case class Pure[E, A](func: A => Validated[E, A])
+        extends Predicate[E, A]
+  }
 
   sealed trait Check[E, A, B] {
-    def apply(a: A): Validated[E, B] =
-      ???
+    import Check._
+
+    def apply(a: A)(implicit s: Semigroup[E]): Validated[E, B]
 
     def map[C](func: B => C): Check[E, A, C] =
-      ???
+      Map(this, func)
   }
 
-  val a: Predicate[List[String], Int] = Pure { v =>
-    if (v > 2) v.valid
-    else List("Must be > 2").invalid
-  }
+  object Check {
+    def apply[E, A](pred: Predicate[E, A]): Check[E, A, A] =
+      Pure(pred)
 
-  val b: Predicate[List[String], Int] = Pure { v =>
-    if (v < -2) v.valid
-    else List("Must be < -2").invalid
-  }
+    final case class Map[E, A, B, C](check: Check[E, A, B], func: B => C) extends Check[E, A, C] {
+      def apply(a: A)(implicit s: Semigroup[E]): Validated[E, C] =
+        check(a).map(func)
+    }
 
-  val c: Predicate[List[String], Int] = Pure { v =>
-    if (v == 0) v.valid
-    else List("Must be = 0").invalid
+    final case class Pure[E, A](pred: Predicate[E, A]) extends Check[E, A, A] {
+      def apply(a: A)(implicit s: Semigroup[E]): Validated[E, A] =
+        pred(a)
+    }
   }
-
-  val check: Predicate[List[String], Int] = a and b or c
 }
