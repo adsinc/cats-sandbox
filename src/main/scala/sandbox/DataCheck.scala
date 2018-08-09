@@ -55,13 +55,17 @@ object DataCheck {
 
     def flatMap[C](func: B => Check[E, A, C]): Check[E, A, C] =
       FlatMap(this, func)
+
+    def andThen[C](that: Check[E, B, C]) =
+      AndThen(this, that)
   }
 
   object Check {
     def apply[E, A](pred: Predicate[E, A]): Check[E, A, A] =
       Pure(pred)
 
-    final case class Map[E, A, B, C](check: Check[E, A, B], func: B => C) extends Check[E, A, C] {
+    final case class Map[E, A, B, C](check: Check[E, A, B], func: B => C)
+        extends Check[E, A, C] {
       def apply(a: A)(implicit s: Semigroup[E]): Validated[E, C] =
         check(a).map(func)
     }
@@ -71,12 +75,21 @@ object DataCheck {
         pred(a)
     }
 
-    final case class FlatMap[E, A, B, C](check: Check[E, A, B], func: B => Check[E, A, C]) extends Check[E, A, C] {
+    final case class FlatMap[E, A, B, C](check: Check[E, A, B],
+                                         func: B => Check[E, A, C])
+        extends Check[E, A, C] {
       def apply(in: A)(implicit s: Semigroup[E]): Validated[E, C] =
         check(in) match {
-          case Validated.Valid(b) => func(b)(in)
+          case Validated.Valid(b)   => func(b)(in)
           case Validated.Invalid(e) => e.invalid[C]
         }
+    }
+
+    final case class AndThen[E, A, B, C](first: Check[E, A, B],
+                                         second: Check[E, B, C])
+        extends Check[E, A, C] {
+      def apply(in: A)(implicit s: Semigroup[E]): Validated[E, C] =
+        first(in).withEither(_.flatMap(b => second(b).toEither))
     }
   }
 }
