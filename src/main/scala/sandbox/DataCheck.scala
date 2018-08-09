@@ -52,6 +52,9 @@ object DataCheck {
 
     def map[C](func: B => C): Check[E, A, C] =
       Map(this, func)
+
+    def flatMap[C](func: B => Check[E, A, C]): Check[E, A, C] =
+      FlatMap(this, func)
   }
 
   object Check {
@@ -66,6 +69,14 @@ object DataCheck {
     final case class Pure[E, A](pred: Predicate[E, A]) extends Check[E, A, A] {
       def apply(a: A)(implicit s: Semigroup[E]): Validated[E, A] =
         pred(a)
+    }
+
+    final case class FlatMap[E, A, B, C](check: Check[E, A, B], func: B => Check[E, A, C]) extends Check[E, A, C] {
+      def apply(in: A)(implicit s: Semigroup[E]): Validated[E, C] =
+        check(in) match {
+          case Validated.Valid(b) => func(b)(in)
+          case Validated.Invalid(e) => e.invalid[C]
+        }
     }
   }
 }
