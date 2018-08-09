@@ -12,19 +12,23 @@ object FormValidation {
   type FailSlow[A] = Validated[List[String], A]
 
   def getValue(data: FormData)(valueName: String): FailFast[String] =
-    data.get(valueName)
+    data
+      .get(valueName)
       .toRight(List(s"No value $valueName"))
 
   def parseInt(name: String)(value: String): FailFast[Int] =
-    Either.catchOnly[NumberFormatException](value.toInt)
+    Either
+      .catchOnly[NumberFormatException](value.toInt)
       .leftMap(_ => List(s"$name must be integer"))
 
   def nonBlank(name: String)(value: String): FailFast[String] =
-    Either.right(value)
+    Either
+      .right(value)
       .ensure(List(s"$name is empty"))(_.nonEmpty)
 
   def nonNegative(name: String)(value: Int): FailFast[Int] =
-    Either.right(value)
+    Either
+      .right(value)
       .ensure(List(s"$name can't be negative"))(_ >= 0)
 
   def readName(data: FormData): FailFast[String] =

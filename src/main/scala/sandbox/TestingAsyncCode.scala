@@ -20,7 +20,7 @@ object TestingAsyncCode {
       hosts.getOrElse(hostname, 0)
   }
 
-  class UptimeService[F[_] : Applicative](client: UptimeClient[F]) {
+  class UptimeService[F[_]: Applicative](client: UptimeClient[F]) {
     def getTotalUptime(hostNames: List[String]): F[Int] =
       hostNames.traverse(client.getUptime).map(_.sum)
   }

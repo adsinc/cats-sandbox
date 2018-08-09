@@ -7,8 +7,7 @@ import sandbox.LoginSystem.{Db, checkLogin}
 
 object LoginSystem {
 
-  case class Db(userNames: Map[Int, String],
-                passwords: Map[String, String])
+  case class Db(userNames: Map[Int, String], passwords: Map[String, String])
 
   type DbReader[A] = Reader[Db, A]
 
@@ -21,7 +20,7 @@ object LoginSystem {
   def checkLogin(userId: Int, password: String): DbReader[Boolean] = {
     findUserName(userId).flatMap {
       case Some(userName) => checkPassword(userName, password)
-      case None => Reader(_ => false)
+      case None           => Reader(_ => false)
     }
   }
 
@@ -29,8 +28,8 @@ object LoginSystem {
     for {
       user <- findUserName(userId)
       result <- user
-                  .map(userName => checkPassword(userName, password))
-                  .getOrElse(false.pure[DbReader])
+        .map(userName => checkPassword(userName, password))
+        .getOrElse(false.pure[DbReader])
     } yield result
   }
 }
@@ -54,4 +53,3 @@ object LoginSystemTest extends App {
   println(checkLogin(2, "ololo").run(db))
   println(checkLogin(4, "davinchi").run(db))
 }
-

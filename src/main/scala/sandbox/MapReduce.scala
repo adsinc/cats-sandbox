@@ -26,5 +26,4 @@ object MapReduce {
       .foldMap(g => Future(g.foldMap(f)))
   }
 
-
 }

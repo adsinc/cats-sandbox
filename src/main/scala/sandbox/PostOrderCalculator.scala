@@ -12,7 +12,7 @@ object PostOrderCalculator {
       case "-" => op(_ - _)
       case "*" => op(_ * _)
       case "/" => op(_ / _)
-      case n => State(s => (n.toInt :: s, n.toInt))
+      case n   => State(s => (n.toInt :: s, n.toInt))
     }
 
   def op(fn: (Int, Int) => Int): CalcState[Int] =
@@ -23,8 +23,8 @@ object PostOrderCalculator {
     }
 
   def evalAll(input: List[String]): CalcState[Int] =
-    input.foldLeft(State.pure[List[Int], Int](0)) {
-      (state, sym) => state.flatMap(_ => evalOne(sym))
+    input.foldLeft(State.pure[List[Int], Int](0)) { (state, sym) =>
+      state.flatMap(_ => evalOne(sym))
     }
 
   def evalInput(s: String): Int =

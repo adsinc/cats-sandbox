@@ -21,7 +21,7 @@ object TreeMonad {
     override def flatMap[A, B](fa: Tree[A])(f: A => Tree[B]): Tree[B] =
       fa match {
         case Branch(l, r) => branch(flatMap(l)(f), flatMap(r)(f))
-        case Leaf(a) => f(a)
+        case Leaf(a)      => f(a)
       }
 
     override def tailRecM[A, B](a: A)(f: A => Tree[Either[A, B]]): Tree[B] =
@@ -29,11 +29,11 @@ object TreeMonad {
         case Branch(leftTree, rightTree) =>
           branch(
             flatMap(leftTree) {
-              case Left(v) => tailRecM(v)(f)
+              case Left(v)  => tailRecM(v)(f)
               case Right(v) => pure(v)
             },
             flatMap(rightTree) {
-              case Left(v) => tailRecM(v)(f)
+              case Left(v)  => tailRecM(v)(f)
               case Right(v) => pure(v)
             }
           )

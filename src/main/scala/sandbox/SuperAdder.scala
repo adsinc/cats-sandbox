@@ -28,8 +28,10 @@ object SuperAdderTest extends App {
   println(add(List(1, 2, 3)).show)
   println(add(List(Some(1), None, Some(3))).show)
 
-  println(add(List(
-    Order(10.1, 4),
-    Order(8.22, 2.3)
-  )))
+  println(
+    add(
+      List(
+        Order(10.1, 4),
+        Order(8.22, 2.3)
+      )))
 }

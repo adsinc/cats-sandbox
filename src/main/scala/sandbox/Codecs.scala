@@ -30,7 +30,8 @@ object Codecs {
       override def decode(value: String): String = value
     }
 
-  implicit val doubleCodec: Codec[Double] = stringCodec.imap(_.toDouble, _.toString)
+  implicit val doubleCodec: Codec[Double] =
+    stringCodec.imap(_.toDouble, _.toString)
 
   final case class Box[A](value: A)
 
