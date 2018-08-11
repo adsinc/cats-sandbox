@@ -1,7 +1,7 @@
 package sandbox
 
 import cats._
-import cats.data.Validated
+import cats.data.{NonEmptyList, Validated}
 import cats.data.Validated._
 import cats.implicits._
 
@@ -43,6 +43,42 @@ object DataCheck {
 
     final case class Pure[E, A](func: A => Validated[E, A])
         extends Predicate[E, A]
+
+    def apply[E, A](f: A => Validated[E, A]): Predicate[E, A] =
+      Pure(f)
+
+    def lift[E, A](err: E, fn: A => Boolean): Predicate[E, A] =
+      Pure(a => if(fn(a)) a.valid else err.invalid)
+
+    type Errors = NonEmptyList[String]
+
+    def error(s: String): Errors =
+      NonEmptyList(s, Nil)
+
+    def longerThan(n: Int): Predicate[Errors, String] =
+      Predicate.lift(
+        error(s"Must be longer than $n characters"),
+        _.length > n
+      )
+
+    val aphanumeric: Predicate[Errors, String] =
+      Predicate.lift(
+        error(s"Must be all alphanumeric characters"),
+        _.forall(_.isLetterOrDigit)
+      )
+
+    def contains(char: Char): Predicate[Errors, String] =
+      Predicate.lift(
+        error(s"Must contain character $char"),
+        _.contains(char)
+      )
+
+    def containsOnce(char: Char): Predicate[Errors, String] =
+      Predicate.lift(
+        error(s"Must contain character $char only once"),
+        _.count(_ == char) == 1
+      )
+
   }
 
   sealed trait Check[E, A, B] {
