@@ -4,6 +4,7 @@ import cats._
 import cats.data.{NonEmptyList, Validated}
 import cats.data.Validated._
 import cats.implicits._
+import sandbox.DataCheck.Predicate._
 
 object DataCheck {
 
@@ -48,7 +49,7 @@ object DataCheck {
       Pure(f)
 
     def lift[E, A](err: E, fn: A => Boolean): Predicate[E, A] =
-      Pure(a => if(fn(a)) a.valid else err.invalid)
+      Pure(a => if (fn(a)) a.valid else err.invalid)
 
     type Errors = NonEmptyList[String]
 
@@ -56,22 +57,16 @@ object DataCheck {
       NonEmptyList(s, Nil)
 
     def longerThan(n: Int): Predicate[Errors, String] =
-      Predicate.lift(
-        error(s"Must be longer than $n characters"),
-        _.length > n
-      )
+      Predicate.lift(error(s"Must be longer than $n characters"), _.length > n)
 
-    val aphanumeric: Predicate[Errors, String] =
+    val alphanumeric: Predicate[Errors, String] =
       Predicate.lift(
         error(s"Must be all alphanumeric characters"),
         _.forall(_.isLetterOrDigit)
       )
 
     def contains(char: Char): Predicate[Errors, String] =
-      Predicate.lift(
-        error(s"Must contain character $char"),
-        _.contains(char)
-      )
+      Predicate.lift(error(s"Must contain character $char"), _.contains(char))
 
     def containsOnce(char: Char): Predicate[Errors, String] =
       Predicate.lift(
@@ -79,6 +74,8 @@ object DataCheck {
         _.count(_ == char) == 1
       )
 
+    val validateUserName: Predicate[Errors, String] =
+      longerThan(3) and alphanumeric
   }
 
   sealed trait Check[E, A, B] {
@@ -92,23 +89,21 @@ object DataCheck {
     def flatMap[C](func: B => Check[E, A, C]): Check[E, A, C] =
       FlatMap(this, func)
 
-    def andThen[C](that: Check[E, B, C]) =
+    def andThen[C](that: Check[E, B, C]): Check[E, A, C] =
       AndThen(this, that)
   }
 
   object Check {
     def apply[E, A](pred: Predicate[E, A]): Check[E, A, A] =
-      Pure(pred)
+      PurePredicate(pred)
+
+    def apply[E, A, B](func: A => Validated[E, B]): Check[E, A, B] =
+      Pure(func)
 
     final case class Map[E, A, B, C](check: Check[E, A, B], func: B => C)
         extends Check[E, A, C] {
       def apply(a: A)(implicit s: Semigroup[E]): Validated[E, C] =
         check(a).map(func)
-    }
-
-    final case class Pure[E, A](pred: Predicate[E, A]) extends Check[E, A, A] {
-      def apply(a: A)(implicit s: Semigroup[E]): Validated[E, A] =
-        pred(a)
     }
 
     final case class FlatMap[E, A, B, C](check: Check[E, A, B],
@@ -126,6 +121,32 @@ object DataCheck {
         extends Check[E, A, C] {
       def apply(in: A)(implicit s: Semigroup[E]): Validated[E, C] =
         first(in).withEither(_.flatMap(b => second(b).toEither))
+    }
+
+    final case class Pure[E, A, B](func: A => Validated[E, B])
+        extends Check[E, A, B] {
+      def apply(a: A)(implicit s: Semigroup[E]): Validated[E, B] =
+        func(a)
+    }
+
+    final case class PurePredicate[E, A](pred: Predicate[E, A])
+        extends Check[E, A, A] {
+      def apply(a: A)(implicit s: Semigroup[E]): Validated[E, A] =
+        pred(a)
+    }
+
+    val checkUserName: Check[Errors, String, String] =
+      Check(validateUserName)
+
+    val checkEmail: Check[Errors, String, String] = {
+      Check(containsOnce('@'))
+        .map(_.split("@"))
+        .andThen {
+          Check { arr =>
+            (longerThan(0)(arr(0)), (longerThan(2) and contains('.'))(arr(1)))
+              .mapN(_ |+| _)
+          }
+        }
     }
   }
 }
