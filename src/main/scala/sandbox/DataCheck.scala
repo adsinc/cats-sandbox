@@ -33,6 +33,9 @@ object DataCheck {
               }
           }
       }
+
+    def run(implicit s: Semigroup[E]): A => Either[E, A] =
+      a => this(a).toEither
   }
 
   object Predicate {
