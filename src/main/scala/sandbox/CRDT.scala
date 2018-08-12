@@ -1,23 +1,21 @@
 package sandbox
 
-import cats.Monoid
+import cats._
+import cats.implicits._
 
 object CRDT {
 
-  final case class GCounter(counters: Map[String, Int]) {
-    def increment(machine: String, amount: Int): GCounter = {
-      val newAmount = amount + counters.getOrElse(machine, 0)
+  final case class GCounter[A](counters: Map[String, A]) {
+    def increment(machine: String, amount: A)(implicit m: Monoid[A]): GCounter[A] = {
+      val newAmount = amount |+| counters.getOrElse(machine, m.empty)
       GCounter(counters + (machine -> newAmount))
     }
 
-    def merge(that: GCounter): GCounter =
-      GCounter(that.counters ++ counters.map {
-        case (k, v) =>
-          k -> math.max(v, counters.getOrElse(k, 0))
-      })
+    def merge(that: GCounter[A])(implicit b: BoundedSemiLattice[A]): GCounter[A] =
+      GCounter(counters |+| that.counters)
 
-    def total: Int =
-      counters.values.sum
+    def total(implicit m: Monoid[A]): A =
+      counters.values.toList.combineAll
   }
 
   trait BoundedSemiLattice[A] extends Monoid[A] {
